@@ -4,7 +4,9 @@ MI de Sistemas Digitais (TEC499) - TP03
 ## Sumário
 
 [Introdução](#-introdução)
+
 [Pré-requisitos](#-pré-requisitos)
+
 [Como instalar?](#-como-instalar)
 [Requisitos do problema](#-requisitos-do-problema)
 [Recursos utilizados](#-recursos-utilizados)

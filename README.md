@@ -89,21 +89,29 @@ A unidade lógico-aritmética visual do coprocessador divide-se em três motores
 
 ### Unidades de Desenho (Motores Gráficos)
 
-A unidade lógico-aritmética visual do coprocessador divide-se em três motores de hardware dedicados. Todos operam com as coordenadas de varredura previamente convertidas para a resolução lógica[cite: 16, 17, 24].
+A unidade lógico-aritmética visual do coprocessador divide-se em três motores de hardware dedicados. Todos operam com as coordenadas de varredura previamente convertidas para a resolução lógica.
 
 **Motor de Background**
+
 O módulo `Motor_Background.v` é responsável por formar o cenário utilizando o conceito de Tilemap. Ele armazena uma matriz de 40x30, totalizando 1200 índices de tiles de 8x8 pixels.
 Para determinar o pixel correto que a varredura atual está, o módulo soma o deslocamento atual (inicializado em 0) às coordenadas de varredura. O valor resultante é dividido por 8 para identificar a localização do bloco no mapa, e o resto da divisão define a posição exata do pixel dentro do tile selecionado, gerando o endereço de memória apropriado para leitura na ROM.
 
 **Motor de Sprites**
+
 A geração de elementos mais móveis e dinâmicos ocorre através do `Motor_sprite.v`, que controla registradores de posição X e Y, além de visibilidade e espelhamento, para até 32 sprites simultâneos.
 O módulo varre ativamente as coordenadas e, caso o ponto lógico atual esteja dentro das dimensões de 16x16 pixels de um sprite ativo (estar ativo é uma sinalização que cada sprite armazena), calcula o endereço na ROM correspondente. A aplicação de espelhamento é feita de forma aritmética; se o sinal de inversão estiver habilitado, a coordenada local do pixel é subtraída de 15, permitindo reutilizar o mesmo sprite na memória para orientações distintas.
 
 **Motor de Rasterização de Polígonos**
+
 Para desenhar polígonos, o `Motor_Rasterizador.v` dispensa bancos de imagem e utiliza aritmética inteira.
 A técnica para triângulos e quadrado preenchidos a partir de coordenadas recebidas (x e y para cada vértice) é a Edge Functions (Equações de Arestas). O algoritmo realiza o determinante entre o vetor de cada aresta do triângulo e o vetor do ponto de varredura com cada vértice recebido. Quando os três determinantes resultantes apresentam o mesmo sinal, comprova-se que a coordenada pertence à área interna do polígono, habilitando o preenchimento do pixel com o índice de cor pré-definido (índice de cor é a saída do módulo).
 
+### Controlador VGA e Double Buffering
 
+Como os três motores funcionam em paralelo, é necessário um estágio de composição de cena. O `Compositor.v` atua como um multiplexador que obedece à regra de prioridade: Polígonos sobrepõem Sprites, que sobrepõem o Background. Caso a camada superior envie a cor 0 (transparência), a cor da camada inferior é assumida.
+
+Para exibir a imagem composta sem instabilidades visuais, o projeto implementa o conceito de Double Buffering utilizando memória RAM.
+A GPU opera no clock de 100 MHz desenhando o quadro inteiro em um buffer. Simultaneamente, o módulo `vga_driver.v` lê o segundo buffer a 25 MHz para enviar os dados aos fios físicos do monitor VGA e gerar os intervalos de Blanking necessários (sincronismo horizontal e vertical). Apenas ao final da atualização da tela (durante o pulso de VSYNC), o sinal de `swap_request` inverte a leitura dos buffers, atualizando o quadro de forma imperceptível para o usuário.
 
 
 

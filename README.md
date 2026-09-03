@@ -1,9 +1,9 @@
-#Núcleo de Coprocessador Gráfico em FPGA 
+# Núcleo de Coprocessador Gráfico em FPGA 
 MI de Sistemas Digitais (TEC499) - TP03
 
-##Sumário
+## Sumário
 
-* [Introdução](#-introdução)
+[Introdução](#-introdução)
 * [Pré-requisitos](#-pré-requisitos)
 * [Como instalar?](#-como-instalar)
 * [Requisitos do problema](#-requisitos-do-problema)

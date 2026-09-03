@@ -62,6 +62,46 @@ O problema exige um núcle de coprocessador capaz de gerar sinais de vídeo cont
 * **Quartus Prime Lite 23.1:** Software que permite a criação, depuração e otimização de códigos em linguagem de descrição de hardware, utilizado para gerar os IP Cores (circuitos lógicos pré-projetados) necessários (ALTSYNCRAM para mémorias dedicadas e Altera PLL para geração de clock específico).
 * **GitHub:** Plataforma de hospedagem utilizada para versionar os arquivos de código-fonte (`.v`), projetos (`.qpf`, `.qsf`) e arquivos de inicialização de memória (`.mif`, `.hex`).
 
+## Metodologia
+
+Os computadores possuem como um dos seus componentes principais o processador (CPU), que realiza o controle do fluxo de dados e o processamento de instruções do sistema. Contudo, muitas operações, como o cálculo contínuo das coordenadas de pixels, exigem muito poder de processamento, o que pode sobrecarregar a CPU e tornar o sistema lento. Assim, surge a ideia do coprocessador gráfico (GPU), uma unidade de processamento auxiliar que atua de forma independente e paralela à CPU, servindo para realizar as operações de geração de imagem de forma muito mais eficiente.
+
+Para o desenvolvimento deste coprocessador, a arquitetura foi planejada com foco no paralelismo de hardware. A geração de imagens exige um sincronismo rigoroso para o monitor VGA. Para assegurar o processamento rápido sem comprometer a taxa de varredura do monitor, o sistema opera sob dois domínios de clock: um clock de 100 MHz para os cálculos e a escrita na memória de vídeo, e um clock de 25 MHz para a leitura contínua e o envio do sinal VGA.
+
+### Unidade de controle
+
+A unidade de controle descreve um design de arquitetura responsável pelo fluxo de dados e pela ativação dos módulos de desenho. Atuando como uma Máquina de Estados Finitos (MEF), o módulo `Controle.v` processa as entradas do usuário e direciona as instruções aos motores gráficos.
+
+O módulo faz a leitura das chaves da placa passando pelo Debounce_SW.v. Esse arquivo serve para limpar o ruído mecânico (mau contato que gera instabilizade natural dos botões/chaves), usando um contador interno para garantir que o clique só seja aceito quando o sinal se mantiver totalmente estável.
+
+A máquina de estados opera de um jeito bem direto, alternando entre o ESTADO_NORMAL e o ESTADO_MOVENDO. Lendo as chaves SW[9:8], ela entende qual camada gráfica será enviada para tela (Polígonos, Sprites, Background ou Todos). A partir dessa escolha, ela avisa o motor gráfico correto ligando os sinais de habilitação (como o controle_ativo) e mandando qual é a direcao exata do movimento.
+
+### Memória e Paleta
+
+A memória é um recurso escasso em FPGAs. Mapear totalmente a resolução de 640x480 pixels em formato RGB de 24 bits consumiria blocos lógicos inviáveis para este hardware. Para contornar tal limitação, a arquitetura reduz a malha de desenho para uma resolução lógica de 320x240, desconsiderando o bit menos significativo das coordenadas físicas X e Y advindas do módulo VGA.
+
+O módulo de paleta opera como uma tabela de conversão, recebendo o índice de 8 bits do motor de polígonos e decodificando a cor exigida em um valor de 8 bits de cor RGB (3 primeiros para Vermelho, 3 para Verde e 2 para Azul). A paleta envia a informação de cor para o módulo compositor que mapeia para uma saída RGB de 24 bits (8 bits por canal) ligada diretamente aos conversores digital-analógico do monitor. O índice de valor 0 é reservado como máscara de transparência, ou seja, não traduz de fato uma cor.
+Os dados puros de imagens (cenários e sprites) são armazenados em arquivos `.mif` que alimentam as memórias ROM instanciadas no projeto, como o módulo `tiles256.v`, que aloca 16384 bites para localizar e armazenar os padrões gráficos.
+
+### Unidades de Desenho (Motores Gráficos)
+
+A unidade lógico-aritmética visual do coprocessador divide-se em três motores de hardware dedicados. Todos operam com as coordenadas de varredura previamente convertidas para a resolução lógica.
+
+### Unidades de Desenho (Motores Gráficos)
+
+A unidade lógico-aritmética visual do coprocessador divide-se em três motores de hardware dedicados. Todos operam com as coordenadas de varredura previamente convertidas para a resolução lógica[cite: 16, 17, 24].
+
+**Motor de Background**
+O módulo `Motor_Background.v` é responsável por formar o cenário utilizando o conceito de Tilemap. Ele armazena uma matriz de 40x30, totalizando 1200 índices de tiles de 8x8 pixels.
+Para determinar o pixel correto que a varredura atual está, o módulo soma o deslocamento atual (inicializado em 0) às coordenadas de varredura. O valor resultante é dividido por 8 para identificar a localização do bloco no mapa, e o resto da divisão define a posição exata do pixel dentro do tile selecionado, gerando o endereço de memória apropriado para leitura na ROM.
+
+**Motor de Sprites**
+A geração de elementos mais móveis e dinâmicos ocorre através do `Motor_sprite.v`, que controla registradores de posição X e Y, além de visibilidade e espelhamento, para até 32 sprites simultâneos.
+O módulo varre ativamente as coordenadas e, caso o ponto lógico atual esteja dentro das dimensões de 16x16 pixels de um sprite ativo (estar ativo é uma sinalização que cada sprite armazena), calcula o endereço na ROM correspondente. A aplicação de espelhamento é feita de forma aritmética; se o sinal de inversão estiver habilitado, a coordenada local do pixel é subtraída de 15, permitindo reutilizar o mesmo sprite na memória para orientações distintas.
+
+**Motor de Rasterização de Polígonos**
+Para desenhar polígonos, o `Motor_Rasterizador.v` dispensa bancos de imagem e utiliza aritmética inteira.
+A técnica para triângulos e quadrado preenchidos a partir de coordenadas recebidas (x e y para cada vértice) é a Edge Functions (Equações de Arestas). O algoritmo realiza o determinante entre o vetor de cada aresta do triângulo e o vetor do ponto de varredura com cada vértice recebido. Quando os três determinantes resultantes apresentam o mesmo sinal, comprova-se que a coordenada pertence à área interna do polígono, habilitando o preenchimento do pixel com o índice de cor pré-definido (índice de cor é a saída do módulo).
 
 
 

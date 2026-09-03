@@ -1,0 +1,26 @@
+# Pastas de compilação do Quartus
+db/
+incremental_db/
+output_files/
+simulation/
+timing/
+greybox_tmp/
+
+# Relatórios de compilação
+*.rpt
+*.summary
+*.smsg
+*.map
+*.pin
+*.done
+*.jdi
+*.sld
+
+# Configurações da janela do usuário
+*.qws
+
+# Arquivos de programação (binários)
+*.sof
+*.pof
+*.jam
+*.jbc

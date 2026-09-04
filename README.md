@@ -155,9 +155,8 @@ INTEL CORPORATION. Intel 8087 Numeric Data Processor: User’s Manual. Disponív
 
 ## Colaboradores
 
-Ericka Almeida de Lima- ErickaUEFS
 
-Gustavo Leão- GustavolLeao
-
-Felipe Queiroz-felsq
+* [Ericka Almeida de Lima](https://github.com/ErickaUEFS)
+* [Gustavo Leão](https://github.com/GustavolLeao)
+* [Felipe Queiroz](https://github.com/felpsq)
 

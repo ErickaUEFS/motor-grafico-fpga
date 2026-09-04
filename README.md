@@ -143,7 +143,7 @@ Para que essa comunicação com o monitor funcionasse sem interrupções, o dom�
 
 Por fim, estratégias como o uso da resolução lógica (agrupando pixels reais para economizar blocos de memória RAM) e a aplicação de equações matemáticas puras (Edge Functions) para rasterizar geometrias sem o uso de imagens pré-salvas, demonstraram na prática como contornar as limitações físicas de hardware de forma eficiente. 
 
-Apesar do funcionamento satisfatório dos motores gráficos, o projeto atual apresenta algumas limitações inerentes ao escopo desta primeira etapa de desenvolvimento. No motor de rasterização, por exemplo, o suporte a figuras geométricas restringe-se exclusivamente à geração de triângulos e retângulos preenchidos, não permitindo o desenho de polígonos mais complexos. Além disso, a interface de interação é estritamente manual e dependente do hardware embarcado na placa DE1-SoC, utilizando apenas as chaves e botões como meio de controle e inserção de dados. Consequentemente, o núcleo gráfico, operando de forma isolada neste momento, não é capaz de receber comandos via periféricos externos, como teclado e mouse. Essa restrição de controle, no entanto, é temporária e será superada nas etapas futuras do projeto, quando houver a implementação do barramento de comunicação (MMIO), permitindo que o processador ARM assuma o tratamento dos periféricos de entrada e envie as instruções diretamente ao coprocessador.
+Apesar do funcionamento correto dos motores gráficos, o projeto apresenta algumas limitações próprias desta primeira etapa de desenvolvimento. No motor de rasterização, por exemplo, o suporte a figuras geométricas restringe-se exclusivamente à geração de triângulos e retângulos preenchidos, não permitindo o desenho de polígonos mais complexos. Além disso, a interface de interação é exclusivamente manual e dependente do hardware na placa DE1-SoC, utilizando apenas as chaves e botões como meio de controle e coleta de dados de escolha. Consequentemente, o núcleo gráfico, operando de forma isolada neste momento, não é capaz de receber comandos via periféricos externos, como teclado e mouse. Essa restrição de controle, no entanto, é temporária e será superada nas etapas futuras do projeto, quando houver a implementação do barramento de comunicação (MMIO), permitindo que o processador ARM assuma o tratamento dos periféricos de entrada e envie as instruções diretamente ao coprocessador.
 
 ## Referências
 
@@ -155,5 +155,7 @@ INTEL CORPORATION. Intel 8087 Numeric Data Processor: User’s Manual. Disponív
 
 ## Colaboradores
 
-Ericka Almeida de Lima- 
+Ericka Almeida de Lima- ErickaUEFS
+Gustavo Leão
+Felipe Queiroz
 

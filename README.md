@@ -113,5 +113,47 @@ Como os três motores funcionam em paralelo, é necessário um estágio de compo
 Para exibir a imagem composta sem instabilidades visuais, o projeto implementa o conceito de Double Buffering utilizando memória RAM.
 A GPU opera no clock de 100 MHz desenhando o quadro inteiro em um buffer. Simultaneamente, o módulo `vga_driver.v` lê o segundo buffer a 25 MHz para enviar os dados aos fios físicos do monitor VGA e gerar os intervalos de Blanking necessários (sincronismo horizontal e vertical). Apenas ao final da atualização da tela (durante o pulso de VSYNC), o sinal de `swap_request` inverte a leitura dos buffers, atualizando o quadro de forma imperceptível para o usuário.
 
+## Testes
 
+Os testes físicos representam uma etapa fundamental na validação do projeto, servindo para confirmar se o sincronismo dos clocks e a lógica descrita funcionam perfeitamente na prática ao enviar o sinal visual para o monitor. Para validar se cada módulo estava operando de forma correta, a estratégia adotada foi isolar os motores gráficos utilizando as chaves da placa, testando o comportamento de cada desenho um por vez na tela. 
+
+Um exemplo notório dessa depuração ocorreu na verificação do Motor de Rasterização de Polígonos. Durante os primeiros testes físicos de movimentação, notou-se um erro visual com erro de proporção: a figura geométrica desformatava completamente ao mudar de local pela tela. O problema acontecia porque a lógica inicial de deslocamento não estava mantendo a proporção exata da geometria. Para investigar e solucionar esse defeito, adotou-se a estratégia de deslocar apenas 1 pixel por ciclo de movimento, permitindo visualizar a transição do desenho de forma bem suave. 
+
+Com essa abordagem, percebeu-se de forma muito clara que "deslocar" um polígono não é apenas mudar o ponto de origem, mas significa, obrigatoriamente, somar ou subtrair 1 pixel de *todos* os seus vértices simultaneamente na coordenada solicitada. Ou seja, para mover um quadrado para a direita, a máquina precisava incrementar exatamente 1 pixel nos registradores `posX0`, `posX1`, `posX2` e `posX3` ao mesmo tempo. Qualquer atraso ou falta de atualização em um desses vértices causava a deformação visual.
+
+Assim como ocorreu com os polígonos, os motores de sprites e de background foram avaliados passo a passo na placa física. Esse processo garantiu que os limites de borda da tela fossem respeitados (evitando que o desenho "vazasse" para o outro lado do monitor) e que a sobreposição das camadas no Compositor funcionasse perfeitamente, validando o trabalho em conjunto de toda a arquitetura diretamente no hardware.
+
+### Como realizar testes?
+
+Com a FPGA programada e o monitor conectado via VGA, os testes de controle de hardware utilizam as entradas físicas:
+1. Utilizando as chaves `SW[9:8]`, selecione modos (`00` para Polígonos, `01` para Sprites e `10` para Background). Isso isola a via de dados de cada motor, permitindo a depuração visual independente.
+2. Acione os botões `KEY[3:0]` para deslocar cima, baixo, direita e esquerda (tanto para polígonos, sprites, e background), observando o comportamento do componente nos limites do monitor que não permitem ultrapassar a resolução 640x480, feito para evitar underflow ou overflow nos registradores de posição.
+3. Modifique para o modo de exibição total (`11`) e sobreponha os sprites aos cenários e polígonos, com o intuito de validar a integridade da lógica de transparência e prioridade de visibilidade definida pelo módulo Compositor.
+4. Para as chaves 'SW[7:5]' em motor background SW[9:8] em 00, selecione qual posição do mapa receberá o novo tile escolhido, e selecione o índice do tile na memória com as chaves SW[4:2] Com isso, consegue-se editar de forma isolada, por exemplo, o tile das 4 primeiras posições do canto esquerdo superior do monitor.
+5. Nos modos de Sprite e Polígonos, use a chave 'SW[2]' e note o componente de índice 0 sumir ou reaparecer. Essa chave atua como liga/desliga, alterando a flag de ativação e visibilidade do objeto.
+6. Exclusivamente no modo Sprite, manipule as chaves SW[1:0], elas ativam o espelhamento da imagem na horizontal e na vertical, invertendo o sentido do sprite selecionado instantaneamente.
+
+## Conclusão
+
+Diante do detalhamento de todos os componentes, conclui-se que o desenvolvimento deste núcleo de coprocessador gráfico em FPGA cumpriu com os objetivos estabelecidos para o problema, operando de forma autônoma para desenhar polígonos, sprites e cenários na tela. Mais do que a entrega de um produto funcional, a construção deste projeto proporcionou uma imersão profunda e prática nos conceitos de arquitetura de computadores. O processo evidenciou a importância da modularização, mostrando como um sistema complexo precisa ser dividido em blocos dedicados e independentes — como unidades de controle, memórias, motores gráficos — para que o processador funcione de maneira organizada e paralela.
+
+O desenvolvimento teve um impacto significativo no aprendizado sobre a geração de imagens digitais. Foi necessário compreender desde o princípio mais básico: o fato de que uma imagem na tela não aparece de uma só vez, mas é um aglomerado de pixels desenhados individualmente pelo monitor em um processo de varredura constante, da esquerda para a direita e de cima para baixo. Entender essa dinâmica física foi essencial para projetar a lógica de hardware que calcula, no exato nanossegundo, qual cor deve ser enviada aos fios do cabo VGA.
+
+Para que essa comunicação com o monitor funcionasse sem interrupções, o domínio sobre a lógica de controle e o gerenciamento de clocks mostrou-se um aprendizado indispensável. Como a FPGA precisa calcular a posição matemática das figuras ao mesmo tempo em que a tela varre os pixels, o sistema foi estruturado com dois clocks independentes operando em conjunto com a técnica de Double Buffering. Esse controle temporal foi o responsável por eliminar falhas e instabilidades na formação do quadro, resultando em um vídeo limpo e sincronizado.
+
+Por fim, estratégias como o uso da resolução lógica (agrupando pixels reais para economizar blocos de memória RAM) e a aplicação de equações matemáticas puras (Edge Functions) para rasterizar geometrias sem o uso de imagens pré-salvas, demonstraram na prática como contornar as limitações físicas de hardware de forma eficiente. 
+
+Apesar do funcionamento satisfatório dos motores gráficos, o projeto atual apresenta algumas limitações inerentes ao escopo desta primeira etapa de desenvolvimento. No motor de rasterização, por exemplo, o suporte a figuras geométricas restringe-se exclusivamente à geração de triângulos e retângulos preenchidos, não permitindo o desenho de polígonos mais complexos. Além disso, a interface de interação é estritamente manual e dependente do hardware embarcado na placa DE1-SoC, utilizando apenas as chaves e botões como meio de controle e inserção de dados. Consequentemente, o núcleo gráfico, operando de forma isolada neste momento, não é capaz de receber comandos via periféricos externos, como teclado e mouse. Essa restrição de controle, no entanto, é temporária e será superada nas etapas futuras do projeto, quando houver a implementação do barramento de comunicação (MMIO), permitindo que o processador ARM assuma o tratamento dos periféricos de entrada e envie as instruções diretamente ao coprocessador.
+
+## Referências
+
+Patterson, D. A. ; Hennessy, J. L. 2016. Morgan Kaufmann Publishers. Computer organization and design: ARM edition. 5ª edição.
+
+PANTUZA, J. Organização e arquitetura de computadores: pipeline em processadores. Disponível em: https://blog.pantuza.com/artigos/organizacao-e-arquitetura-de-computadores-pipeline-em-processadores.
+
+INTEL CORPORATION. Intel 8087 Numeric Data Processor: User’s Manual. Disponível em: https://datasheets.chipdb.org/Intel/x86/808x/datashts/8087/205835-007.pdf.
+
+## Colaboradores
+
+Ericka Almeida de Lima- 
 

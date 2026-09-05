@@ -145,7 +145,7 @@ Por fim, estratégias como o uso da resolução lógica (agrupando pixels reais 
 
 Apesar do funcionamento correto dos motores gráficos, o projeto apresenta algumas limitações próprias desta primeira etapa de desenvolvimento. No motor de rasterização, por exemplo, o suporte a figuras geométricas restringe-se exclusivamente à geração de triângulos e retângulos preenchidos, não permitindo o desenho de polígonos mais complexos. Além disso, a interface de interação é exclusivamente manual e dependente do hardware na placa DE1-SoC, utilizando apenas as chaves e botões como meio de controle e coleta de dados de escolha. Consequentemente, o núcleo gráfico, operando de forma isolada neste momento, não é capaz de receber comandos via periféricos externos, como teclado e mouse. Essa restrição de controle, no entanto, é temporária e será superada nas etapas futuras do projeto, quando houver a implementação do barramento de comunicação (MMIO), permitindo que o processador ARM assuma o tratamento dos periféricos de entrada e envie as instruções diretamente ao coprocessador.
 
-## Referências
+
 Patterson, D. A. ; Hennessy, J. L. 2016. Morgan Kaufmann Publishers. Computer organization and design: ARM edition. 5ª edição.
 
 PANTUZA, J. Organização e arquitetura de computadores: pipeline em processadores. Disponível em: https://blog.pantuza.com/artigos/organizacao-e-arquitetura-de-computadores-pipeline-em-processadores.
